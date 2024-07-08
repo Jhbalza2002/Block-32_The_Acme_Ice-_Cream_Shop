@@ -12,23 +12,23 @@ const init = async () => {
   console.log("connected to database");
 
   let SQL = `
-    DROP TABLE IF EXISTS flavors;
-    CREATE TABLE flavors (
-      id SERIAL PRIMARY KEY,
-      created_at TIMESTAMP DEFAULT now(),
-      updated_at TIMESTAMP DEFAULT now(),
-      ranking INTEGER DEFAULT 3 NOT NULL,
-      txt VARCHAR(255) NOT NULL
-    );
-  `;
+      DROP TABLE IF EXISTS flavors;
+      CREATE TABLE flavors (
+        id SERIAL PRIMARY KEY,
+        created_at TIMESTAMP DEFAULT now(),
+        updated_at TIMESTAMP DEFAULT now(),
+        ranking INTEGER DEFAULT 3 NOT NULL,
+        txt VARCHAR(255) NOT NULL
+      );
+    `;
   await client.query(SQL);
   console.log("tables created");
 
   SQL = `
-    INSERT INTO flavors (txt, ranking) VALUES ('Chocolate', 5);
-    INSERT INTO flavors (txt, ranking) VALUES ('Dulce De Leche', 4);
-    INSERT INTO flavors (txt, ranking) VALUES ('Cookie Dough', 2);
-  `;
+      INSERT INTO flavors (txt, ranking) VALUES ('Chocolate', 5);
+      INSERT INTO flavors (txt, ranking) VALUES ('Dulce De Leche', 4);
+      INSERT INTO flavors (txt, ranking) VALUES ('Cookie Dough', 2);
+    `;
   await client.query(SQL);
   console.log("data seeded");
 };
@@ -59,13 +59,27 @@ app.get("/api/flavors", async (req, res, next) => {
   }
 });
 
+app.get("/api/flavors/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const SQL = `SELECT * FROM flavors WHERE id = $1`;
+    const response = await client.query(SQL, [id]);
+    if (response.rows.length === 0) {
+      return res.status(404).json({ error: "Flavor not found" });
+    }
+    res.json(response.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.put("/api/flavors/:id", async (req, res, next) => {
   try {
     const SQL = `
-      UPDATE flavors
-      SET txt=$1, ranking=$2, updated_at=now()
-      WHERE id=$3 RETURNING *
-    `;
+        UPDATE flavors
+        SET txt=$1, ranking=$2, updated_at=now()
+        WHERE id=$3 RETURNING *
+      `;
     const values = [req.body.txt, req.body.ranking, req.params.id];
     const response = await client.query(SQL, values);
     res.send(response.rows[0]);
